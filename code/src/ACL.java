@@ -10,6 +10,7 @@ public class ACL {
     private Random rand;
     private String [] fileContent;
     private String [] sentences;
+    private HashMap<Integer, String> permName;
     static Semaphore mutex;
 
     public ACL(int randDomain, int randFile){
@@ -19,6 +20,11 @@ public class ACL {
         files = randFile;
         accessList = new HashMap<>();
         fileContent = new String[randFile];
+        permName = new HashMap<>();
+        permName.put(3,"Read");
+        permName.put(4,"Write");
+        permName.put(5,"Read/Write");
+        permName.put(1,"True");
 
         sentences = new String[]{"Hello!","That's really nice village","Its cloudy today","Star Wars is a good movie"};
 
@@ -45,7 +51,8 @@ public class ACL {
             HashMap domain = accessList.get(i);
             for(int j = 0; j < domains; j++){
                 int perm = rand.nextInt(3);
-                if(perm == 1){
+                // if it gets the permission and the domain isn't itself
+                if(perm == 1 && j != (i - files)){
                     domain.put(j,perm);
                 }
             }
@@ -61,7 +68,7 @@ public class ACL {
 
         for(int i =0; i < domains; i++){
 
-
+            //starting Threads
             aclThreads[i] = new ACLThreads(i);
             aclThreads[i].start();
         }
@@ -82,21 +89,24 @@ public class ACL {
             for (int j = 0; j < this.domains; j++) {
                 Object perm = this.accessList.get(i).get(j);
                 if(perm != null) {
-                    System.out.print("D" + j + ":" + perm + "   ");
+                    System.out.printf("D%d:%-15s",j,permName.get((Integer)perm));
                 }
             }
 
             System.out.println();
         }
+        System.out.println();
     }
 
 
     class ACLThreads extends Thread{
         int id;
+        int domain;
 
 
         public ACLThreads(int id){
             this.id = id;
+            domain = id;
 
 
         }
@@ -106,20 +116,44 @@ public class ACL {
             int operation;
             int fileOp;
             String newContent;
+            int domainSW;
             for(int i = 0; i< 5; i++){
+                //deciding if it will attempt a domain switch
+                if(rand.nextInt(10) == 5){
+                    domainSW = rand.nextInt(files, (files+domains));
+                    //1 means its trying to domain switch
+                    if(checkACL(domainSW,1) && (domainSW-files) != domain){
+                        mutex.acquireUninterruptibly();
+                        System.out.println("U"+id+"(D"+domain+"): switched to domain D" +(domainSW -files));
+                        domain = (domainSW - files);
+                        mutex.release();
+                    }
+                    //ensure a domain doesn't try to switch to its self
+                    else if((domainSW - files) == domain){
+                        continue;
+                    }
+                    else{
+                        mutex.acquireUninterruptibly();
+                        System.out.println("U"+id+"(D"+domain+"): attempted to switch to domain D" +(domainSW - files)+ ". Permission Denied!");
+                        mutex.release();
+                    }
+                }
+
+                //file operations
                 operation = rand.nextInt(3,5);
                 fileOp = rand.nextInt(files);
+                //using arbitrator to check permissions of file
                 if(operation != 0 && checkACL(fileOp, operation)){
                     if(operation == 3){
                         mutex.acquireUninterruptibly();
-                        System.out.println("D"+id+": read file"+fileOp+" '"+fileContent[fileOp]+"'");
+                        System.out.println("U"+id+"(D"+domain+"): read file"+fileOp+" '"+fileContent[fileOp]+"'");
                         mutex.release();
                     }
                     else if(operation == 4){
                         newContent = sentences[rand.nextInt(3)];
                         mutex.acquireUninterruptibly();
                         fileContent[fileOp] = newContent;
-                        System.out.println("D"+id+": wrote to file"+fileOp+" '"+newContent+"'");
+                        System.out.println("U"+id+"(D"+domain+"): wrote to file"+fileOp+" '"+newContent+"'");
                         mutex.release();
                     }
 
@@ -127,12 +161,12 @@ public class ACL {
                 else{
                     if(operation == 3){
                         mutex.acquireUninterruptibly();
-                        System.out.println("D"+id+": tried to read file"+fileOp+". Permission Denied!");
+                        System.out.println("U"+id+"(D"+domain+"): tried to read file"+fileOp+". Permission Denied!");
                         mutex.release();
                     }
                     else if(operation == 4){
                         mutex.acquireUninterruptibly();
-                        System.out.println("D"+id+": tried to write to file"+fileOp+". Permission Denied!");
+                        System.out.println("U"+id+"(D"+domain+"): tried to write to file"+fileOp+". Permission Denied!");
                         mutex.release();
                     }
 
@@ -145,8 +179,13 @@ public class ACL {
 
         public Boolean checkACL(int objNum, Integer operation){
             //checking if they have permission
-            Object perm = accessList.get(objNum).get(this.id);
+            Object perm = accessList.get(objNum).get(this.domain);
+            //checks read write permissions
             if(perm != null && (perm == operation || perm == (Integer)5)) {
+                return true;
+            }
+            //checks domain switch permissions
+            else if(perm != null && perm == (Integer)1){
                 return true;
             }
             return false;

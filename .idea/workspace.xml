@@ -5,12 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b7633fe9-18ac-43c4-88c5-2c89d4273009" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/code/src/ACL.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/code/src/DiningPhilosophers.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/out/production/code/Main.class" beforeDir="false" afterPath="$PROJECT_DIR$/code/out/production/code/Main.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/src/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/code/src/Main.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/out/production/code/ACL$ACLThreads.class" beforeDir="false" afterPath="$PROJECT_DIR$/code/out/production/code/ACL$ACLThreads.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/out/production/code/ACL.class" beforeDir="false" afterPath="$PROJECT_DIR$/code/out/production/code/ACL.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/src/ACL.java" beforeDir="false" afterPath="$PROJECT_DIR$/code/src/ACL.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -98,6 +96,8 @@
       <workItem from="1666282610615" duration="2918000" />
       <workItem from="1666301553604" duration="5019000" />
       <workItem from="1666309277691" duration="9277000" />
+      <workItem from="1666370516288" duration="576000" />
+      <workItem from="1666384807236" duration="2268000" />
     </task>
     <servers />
   </component>
