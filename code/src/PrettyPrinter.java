@@ -1,5 +1,4 @@
-// Pretty-Printer solution contributed by StackOverflow user, Lyubomyr Shaydariv,
-// Jul 8, 2012 at 15:41
+// Pretty-Printer solution contributed on Jul 8, 2012 at 15:41 by StackOverflow user Lyubomyr Shaydariv:
 // https://stackoverflow.com/questions/11383070/pretty-print-2d-array-in-java
 
 import java.io.PrintStream;
