@@ -1,6 +1,7 @@
 import java.util.HashMap;
 import java.util.Random;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class ACL {
     private HashMap<Integer,HashMap> accessList;
@@ -127,6 +128,7 @@ public class ACL {
                         System.out.println("U"+id+"(D"+domain+"): switched to domain D" +(domainSW -files));
                         domain = (domainSW - files);
                         mutex.release();
+                        yeildCycle();
                     }
                     //ensure a domain doesn't try to switch to its self
                     else if((domainSW - files) == domain){
@@ -136,6 +138,7 @@ public class ACL {
                         mutex.acquireUninterruptibly();
                         System.out.println("U"+id+"(D"+domain+"): attempted to switch to domain D" +(domainSW - files)+ ". Permission Denied!");
                         mutex.release();
+                        yeildCycle();
                     }
                 }
 
@@ -148,6 +151,7 @@ public class ACL {
                         mutex.acquireUninterruptibly();
                         System.out.println("U"+id+"(D"+domain+"): read file"+fileOp+" '"+fileContent[fileOp]+"'");
                         mutex.release();
+                        yeildCycle();
                     }
                     else if(operation == 4){
                         newContent = sentences[rand.nextInt(3)];
@@ -155,6 +159,7 @@ public class ACL {
                         fileContent[fileOp] = newContent;
                         System.out.println("U"+id+"(D"+domain+"): wrote to file"+fileOp+" '"+newContent+"'");
                         mutex.release();
+                        yeildCycle();
                     }
 
                 }
@@ -163,11 +168,13 @@ public class ACL {
                         mutex.acquireUninterruptibly();
                         System.out.println("U"+id+"(D"+domain+"): tried to read file"+fileOp+". Permission Denied!");
                         mutex.release();
+                        yeildCycle();
                     }
                     else if(operation == 4){
                         mutex.acquireUninterruptibly();
                         System.out.println("U"+id+"(D"+domain+"): tried to write to file"+fileOp+". Permission Denied!");
                         mutex.release();
+                        yeildCycle();
                     }
 
 
@@ -189,6 +196,11 @@ public class ACL {
                 return true;
             }
             return false;
+        }
+        public void yeildCycle() {
+            for (int i = 0; i < rand.nextInt(3, 7); i++) {
+                Thread.yield();
+            }
         }
     }
 

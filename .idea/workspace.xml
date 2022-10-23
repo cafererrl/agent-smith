@@ -5,15 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b7633fe9-18ac-43c4-88c5-2c89d4273009" name="Changes" comment="">
-<<<<<<< Updated upstream
+      <change afterPath="$PROJECT_DIR$/.idea/runConfigurations.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/out/production/code/ACL$ACLThreads.class" beforeDir="false" afterPath="$PROJECT_DIR$/code/out/production/code/ACL$ACLThreads.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/out/production/code/ACL.class" beforeDir="false" afterPath="$PROJECT_DIR$/code/out/production/code/ACL.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/src/ACL.java" beforeDir="false" afterPath="$PROJECT_DIR$/code/src/ACL.java" afterDir="false" />
-=======
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
->>>>>>> Stashed changes
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -38,21 +34,12 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "last_opened_file_path": "/home/kaleb/Desktop/SchoolFiles/Y4S1/OS/GitHub/Project2_10-19/code/src",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "project.structure.last.edited": "Modules",
-    "project.structure.proportion": "0.0",
-    "project.structure.side.proportion": "0.0"
-  }
-}]]></component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+  </component>
   <component name="RunManager" selected="Application.ACL">
     <configuration name="ACL" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="ACL" />
@@ -105,12 +92,8 @@
       <workItem from="1666282610615" duration="2918000" />
       <workItem from="1666301553604" duration="5019000" />
       <workItem from="1666309277691" duration="9277000" />
-<<<<<<< Updated upstream
       <workItem from="1666370516288" duration="576000" />
       <workItem from="1666384807236" duration="2268000" />
-=======
-      <workItem from="1666370900564" duration="401000" />
->>>>>>> Stashed changes
     </task>
     <servers />
   </component>
@@ -127,6 +110,7 @@
         </entry>
       </map>
     </option>
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
