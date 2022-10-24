@@ -6,7 +6,7 @@ import static java.lang.Math.abs;
 import static java.lang.System.out;
 
 public class AccessMatrix {
-    enum Perm {     // Declare Permissions. Operational source of truth for Domains and Objects.
+    enum Perm {         // Declare Permissions. Operational source of truth for Domains and Objects.
         NULL,           // 0 NULL
         RW,             // 1 READ-WRITE
         R,              // 2 READ
@@ -14,21 +14,35 @@ public class AccessMatrix {
         DoSwitch,       // 4 DOMAIN-SWITCH TRUE
         DoNotSwitch     // 5 DOMAIN-SWITCH FALSE
     }
-    private static Map<Integer, Map<Semaphore, String>> files; // Files are represented as (id, lock state, string data).
+    private static class File {
+        int id;
+        Semaphore semWriter;
+        Semaphore lock;
+        int readerCount; // Use int with lock (rather than AtomicInteger) to ensure that equality evaluations are protected
+        String data;
+    }
+    private static ArrayList<File> files;
+    private static Map<Integer, Map<Integer, Perm>> matrix;
 
     // Constructor
     private AccessMatrix(int numDomains, int numObjects, Map<Integer, Map<Integer, Perm>> matrix) throws InterruptedException {
-        // Initialize semaphores guarding file objects, and their respective random strings as file data, in hashmap
-        files = new HashMap<Integer, Map<Semaphore, String>>();
+        AccessMatrix.matrix = matrix;
+        // Initialize files and semaphores guarding file objects data
+        files = new ArrayList<File>(numObjects);
         for (int i=0; i < numObjects; i++) {
-            Map<Semaphore, String> fileEntity = new HashMap<Semaphore, String>();
-            fileEntity.put(new Semaphore(1), StringGenerator.generateString());
-            files.put(i, fileEntity);
+            File file = new File();
+            file.id = i;
+            // Use fair semaphores, to directly address a Writer starvation problem
+            file.semWriter = new Semaphore(1, true);
+            file.lock = new Semaphore(1, true);
+            file.readerCount = 0;
+            file.data = StringGenerator.generateString();
+            files.add(file);
         }
         // Print object-file contents, useful for testing initial file string states
         out.println("\nMy Files:");
         for (int i=0; i < files.size(); i++) {
-            out.println("File "+i+": "+files.get(i).values());
+            out.println("File "+i+": "+files.get(i).data);
         }
         out.println();
 
@@ -42,15 +56,12 @@ public class AccessMatrix {
 
     static boolean arbitrator(DomainThread requestingDomain, int entityId, Perm requestedOperation) {
         // Check which file permissions the requesting domain has against the requested operation
-        boolean hasPerm = false;
-        for (int i=0; i < requestingDomain.perms.entrySet().size(); i++) {
-            if (i == entityId & requestingDomain.perms.get(i) == requestedOperation) {
-                hasPerm=true;
-            } else {
-                hasPerm=false;
-            }
+        Perm currPermHeld = matrix.get(requestingDomain.id).get(entityId);
+        // Handle case where R/W permission held in matrix. Bitwise logic to avoid short-circuit evaluation.
+        if (currPermHeld == Perm.RW & (requestedOperation == Perm.R | requestedOperation == Perm.W)) {
+            return true;
         }
-        return hasPerm;
+        return currPermHeld == requestedOperation;
     }
 
     static class DomainThread extends Thread {
@@ -58,7 +69,6 @@ public class AccessMatrix {
         int numDomains;
         int numObjects;
         Map<Integer, Perm> perms;
-
 
         // Constructor
         public DomainThread(int id, int numDomains, int numObjects, Map<Integer, Perm> perms) {
@@ -74,29 +84,28 @@ public class AccessMatrix {
             for (int t: tasks) {
                 switch (t) {
                     case 2: // READ
-                        // Decide which file to READ to. Bound is exclusive, but we zero-index
+                        // Decide which file to READ to. Bound is exclusive, but we zero-index.
                         int randomReadFileId = ThreadLocalRandom.current().nextInt(0, numObjects);
-                        out.println("DomainThread["+this.id + "] > Attempting to read File "+randomReadFileId);
+                        out.println("DomainThread["+this.id + "] > Attempting to read File "+randomReadFileId+".");
                         attemptRead(randomReadFileId);
                         break;
                     case 3: // WRITE
-                        // Decide which file to WRITE to. Bound is exclusive, but we zero-index
+                        // Decide which file to WRITE to. Bound is exclusive, but we zero-index.
                         int randomWriteFileId = ThreadLocalRandom.current().nextInt(0, numObjects);
-                        out.println("DomainThread["+this.id + "] > Attempting to write to File "+randomWriteFileId);
+                        out.println("DomainThread["+this.id + "] > Attempting to write to File "+randomWriteFileId+".");
                         attemptWrite(randomWriteFileId);
                         break;
                     case 4: // DOMAIN SWITCH
-                        // Decide which domain to SWITCH to, but we use generic element id instead of domain id! Bound is exclusive, but we zero-index.
-                        int randomSwitchEntityId = ThreadLocalRandom.current().nextInt(numObjects, numDomains+numObjects); // domains only
-                        out.println("DomainThread["+this.id + "] > Attempting to SWITCH to Domain"+randomSwitchEntityId);
+                        // Decide which domain to SWITCH to, but use generic entity id instead of domain id! Bound is exclusive, but we zero-index.
+                        int randomSwitchEntityId = ThreadLocalRandom.current().nextInt(numObjects, numDomains+numObjects); // Domains only.
+                        out.println("DomainThread["+this.id + "] > Attempting to SWITCH to Domain "+(randomSwitchEntityId-numObjects)+".");
                         attemptDomainSwitch(randomSwitchEntityId);
                         break;
                     default:
-                        out.println(t + " <- Something went wrong with fetching domain-thread requests...");
+                        out.println(t + " <- Task case #. Something went wrong with fetching domain-thread requests...");
                 }
             }
-
-
+            out.println("DomainThread["+this.id + "] > Tasks complete.");
         }
 
         public int[] getThreadOperations() {
@@ -108,44 +117,63 @@ public class AccessMatrix {
             return operations;
         }
 
-        public boolean attemptDomainSwitch(int entityId) {
-            // Check that this DomainThread can SWITCH to prescribed domain
+        public void attemptDomainSwitch(int entityId) {
+            // Check that this DomainThread can SWITCH to prescribed domain.
             if (arbitrator(this, entityId, Perm.DoSwitch)) {
-                out.println("DomainThread["+this.id + "] > Switched to Domain"+entityId);
+                this.perms = matrix.get(entityId-numObjects);
+                // out.println("THREAD"+this.id+" new perms: "+this.perms.values()); // test new perms
+                out.println("DomainThread["+this.id + "] > SWITCH to Domain "+(entityId-numObjects)+".");
                 idle();
-                return true;
             } else {
-                out.println("DomainThread["+this.id + "] > Could not switch to Domain"+entityId+". Permission denied.");
+                out.println("DomainThread["+this.id + "] > Could not SWITCH to Domain "+(entityId-numObjects)+". Permission denied.");
                 idle();
-                return false;
             }
         }
 
-        public boolean attemptRead(int fileId) {
-            // Check that this DomainThread can READ to prescribed file
+        public void attemptRead(int fileId) {
+            File currFile = files.get(fileId);
+            // Check that this DomainThread has PERM to READ to prescribed file.
             if (arbitrator(this, fileId, Perm.R)) {
-                out.println("DomainThread["+this.id + "] > File"+fileId+" contains: "+files.get(fileId).values());
-                idle();
-                return true;
+                try { // Protect readerCount incrementation
+                    currFile.lock.acquireUninterruptibly();
+                    currFile.readerCount++;
+                    if (currFile.readerCount == 1) { currFile.semWriter.acquireUninterruptibly(); }
+                    currFile.lock.release();
+                    // Read file
+                    out.println("DomainThread["+this.id + "] > READ permission granted. File "+fileId+" contains: '"+files.get(fileId).data+"'.");
+                    idle();
+                    currFile.lock.acquireUninterruptibly();
+                    currFile.readerCount--;
+                    if (currFile.readerCount == 0) { currFile.semWriter.release(); }
+                    currFile.lock.release();
+                    throw new InterruptedException();
+                } catch (InterruptedException ignored) {
+
+                }
             } else {
-                out.println("DomainThread["+this.id + "] > Could not read File"+fileId+". Permission denied.");
+                out.println("DomainThread["+this.id + "] > Could not READ File "+fileId+". Permission denied.");
                 idle();
-                return false;
             }
         }
 
-        public boolean attemptWrite(int fileId) {
-            // Check that this DomainThread can WRITE to prescribed file
+        public void attemptWrite(int fileId) {
+            File currFile = files.get(fileId);
+            // Check that this DomainThread has PERM tp WRITE to prescribed file.
             if (arbitrator(this, fileId, Perm.W)) {
-                // Step into hashmap of <file id, <file semaphore, file string-data>>, and replace with new random string data
-                files.get(fileId).replace(files.get(fileId).entrySet().iterator().next().getKey(), StringGenerator.generateString());
-                out.println("DomainThread["+this.id + "] > '"+files.get(fileId).values()+"' written to File"+fileId);
-                idle();
-                return true;
+                try {
+                    currFile.semWriter.acquireUninterruptibly();
+                    // Write to File
+                    currFile.data = StringGenerator.generateString();
+                    files.set(fileId, currFile);
+                    out.println("DomainThread["+this.id + "] > WRITE permission granted. '"+files.get(fileId).data+"' written to File "+fileId+".");
+                    idle();
+                    currFile.semWriter.release();
+                    throw new InterruptedException();
+                } catch (InterruptedException ignored) {
+                }
             } else {
-                out.println("DomainThread["+this.id + "] > Denied write-access to File"+fileId);
+                out.println("DomainThread["+this.id + "] > Could not WRITE to File "+fileId+". Permission denied.");
                 idle();
-                return false;
             }
         }
 
@@ -156,12 +184,11 @@ public class AccessMatrix {
             }
             out.println("DomainThread["+this.id + "] > Yielded "+amtCycles+" times.");
         }
-
     }
 
 
 
-
+// Driver
     public static void main(String[] args) {
         // Generate random values for N Domains and M Objects respectively.
         Random rand = new Random(System.currentTimeMillis());
@@ -170,7 +197,7 @@ public class AccessMatrix {
         int totalEntities = nDomains + mObjects;
         out.println("numDomains: " + nDomains + "\nnumObjects: " + mObjects);
 
-        // Declare and initialize Matrix entries with RANDOM permissions
+        // Declare and initialize Matrix entries with RANDOM permissions.
         Map<Integer, Map<Integer, Perm>> matrix = new HashMap<Integer, Map<Integer, Perm>>();
         for (int domainKey=0; domainKey < nDomains; domainKey++) {
             matrix.put(domainKey, new HashMap<Integer, Perm>());
@@ -192,8 +219,8 @@ public class AccessMatrix {
             }
         }
 
-        // Pack up the matrix data for printing TODO: // put into method called sendMatrixToPrinter()
-        // Build title row
+        // Pack up the matrix data for printing.
+        // Build title row.
         ArrayList<String> titleRow = new ArrayList<>();
         titleRow.add("Object/Domain");
         for (int i=0; i < totalEntities; i++) {
@@ -203,7 +230,7 @@ public class AccessMatrix {
                 titleRow.add("DOMAIN"+(i-mObjects));
             }
         }
-        // Build row entries of matrix table data
+        // Build row entries of matrix table data.
         ArrayList<ArrayList<String>> tableData = new ArrayList<>();
         tableData.add(titleRow);
         for (int i=0; i < nDomains; i++) {
@@ -216,7 +243,7 @@ public class AccessMatrix {
         }
         String[][] arrTableData = tableData.stream().map(u -> u.toArray(new String[0])).toArray(String[][]::new);
 
-        // Call Pretty Printer TODO: // put into method called printMatrix()
+        // Call Pretty Printer.
         final PrettyPrinter printer = new PrettyPrinter(out);
         printer.print(arrTableData);
 
@@ -225,7 +252,5 @@ public class AccessMatrix {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
     }
-
 }
