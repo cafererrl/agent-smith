@@ -119,6 +119,7 @@ public class ACL {
             String newContent;
             int domainSW;
             for(int i = 0; i< 5; i++){
+                /*
                 //deciding if it will attempt a domain switch
                 if(rand.nextInt(10) == 5){
                     domainSW = rand.nextInt(files, (files+domains));
@@ -141,10 +142,20 @@ public class ACL {
                         yeildCycle();
                     }
                 }
+                 */
 
                 //file operations
-                operation = rand.nextInt(3,5);
-                fileOp = rand.nextInt(files);
+                operation = rand.nextInt(1,5);
+                if(operation == 3 || operation == 4) {
+                    fileOp = rand.nextInt(files);
+                }
+                else{
+                    fileOp = rand.nextInt(files, (files + domains));
+                }
+                //ensures domains dont attempt to switch to themselves
+                while(fileOp-files == domain){
+                    fileOp = rand.nextInt(files, (files+domains));
+                }
                 //using arbitrator to check permissions of file
                 if(operation != 0 && checkACL(fileOp, operation)){
                     if(operation == 3){
@@ -161,6 +172,13 @@ public class ACL {
                         mutex.release();
                         yeildCycle();
                     }
+                    else if(operation == 1){
+                        mutex.acquireUninterruptibly();
+                        System.out.println("U"+id+"(D"+domain+"): switched to domain D" +(fileOp -files));
+                        domain = (fileOp - files);
+                        mutex.release();
+                        yeildCycle();
+                    }
 
                 }
                 else{
@@ -173,6 +191,12 @@ public class ACL {
                     else if(operation == 4){
                         mutex.acquireUninterruptibly();
                         System.out.println("U"+id+"(D"+domain+"): tried to write to file"+fileOp+". Permission Denied!");
+                        mutex.release();
+                        yeildCycle();
+                    }
+                    else if(operation == 1 || operation == 2){
+                        mutex.acquireUninterruptibly();
+                        System.out.println("U"+id+"(D"+domain+"): attempted to switch to domain D" +(fileOp - files)+ ". Permission Denied!");
                         mutex.release();
                         yeildCycle();
                     }
@@ -192,7 +216,7 @@ public class ACL {
                 return true;
             }
             //checks domain switch permissions
-            else if(perm != null && perm == (Integer)1){
+            else if(perm != null && perm == operation){
                 return true;
             }
             return false;
