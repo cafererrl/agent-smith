@@ -83,26 +83,26 @@ public class AccessMatrix {
             int[] tasks = getThreadOperations();
             for (int t: tasks) {
                 switch (t) {
-                    case 2: // READ
+                    case 2 -> { // READ
                         // Decide which file to READ to. Bound is exclusive, but we zero-index.
                         int randomReadFileId = ThreadLocalRandom.current().nextInt(0, numObjects);
-                        out.println("DomainThread["+this.id + "] > Attempting to read File "+randomReadFileId+".");
+                        out.println("DomainThread[" + this.id + "] > Attempting to read File " + randomReadFileId + ".");
                         attemptRead(randomReadFileId);
-                        break;
-                    case 3: // WRITE
+                    }
+                    case 3 -> { // WRITE
                         // Decide which file to WRITE to. Bound is exclusive, but we zero-index.
                         int randomWriteFileId = ThreadLocalRandom.current().nextInt(0, numObjects);
-                        out.println("DomainThread["+this.id + "] > Attempting to write to File "+randomWriteFileId+".");
+                        out.println("DomainThread[" + this.id + "] > Attempting to write to File " + randomWriteFileId + ".");
                         attemptWrite(randomWriteFileId);
-                        break;
-                    case 4: // DOMAIN SWITCH
+                    }
+                    case 4 -> { // DOMAIN SWITCH
                         // Decide which domain to SWITCH to, but use generic entity id instead of domain id! Bound is exclusive, but we zero-index.
-                        int randomSwitchEntityId = ThreadLocalRandom.current().nextInt(numObjects, numDomains+numObjects); // Domains only.
-                        out.println("DomainThread["+this.id + "] > Attempting to SWITCH to Domain "+(randomSwitchEntityId-numObjects)+".");
+                        int randomSwitchEntityId = ThreadLocalRandom.current().nextInt(numObjects, numDomains + numObjects); // Domains only.
+                        out.println("DomainThread[" + this.id + "] > Attempting to SWITCH to Domain " + (randomSwitchEntityId - numObjects) + ".");
                         attemptDomainSwitch(randomSwitchEntityId);
-                        break;
-                    default:
-                        out.println(t + " <- Task case #. Something went wrong with fetching domain-thread requests...");
+                    }
+                    default ->
+                            out.println(t + " <- Task case #. Something went wrong with fetching domain-thread requests...");
                 }
             }
             out.println("DomainThread["+this.id + "] > Tasks complete.");
